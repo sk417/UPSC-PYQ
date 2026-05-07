@@ -1,0 +1,49 @@
+{
+  "subjects": [
+    {
+      "slug": "ancient-medieval-history",
+      "file": "ancientandMedievalIndianHistory.txt",
+      "shortTitle": "Ancient & Medieval"
+    },
+    {
+      "slug": "modern-history",
+      "file": "modernHistroy.txt",
+      "shortTitle": "Modern History"
+    },
+    {
+      "slug": "art-culture",
+      "file": "artandCulture.txt",
+      "shortTitle": "Art & Culture"
+    },
+    {
+      "slug": "geography",
+      "file": "geography.txt",
+      "shortTitle": "Geography"
+    },
+    {
+      "slug": "indian-polity",
+      "file": "indianPolity.txt",
+      "shortTitle": "Indian Polity"
+    },
+    {
+      "slug": "indian-economy",
+      "file": "indianEconomy.txt",
+      "shortTitle": "Indian Economy"
+    },
+    {
+      "slug": "environment",
+      "file": "environment.txt",
+      "shortTitle": "Environment"
+    },
+    {
+      "slug": "science-technology",
+      "file": "scienceAndTechnology.txt",
+      "shortTitle": "Science & Tech"
+    },
+    {
+      "slug": "international-relations",
+      "file": "internationalRelations.txt",
+      "shortTitle": "International Relations"
+    }
+  ]
+}

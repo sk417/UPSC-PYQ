@@ -1,0 +1,215 @@
+@if (loading) {
+  <p class="muted">Loading questions…</p>
+} @else if (!questions.length) {
+  <p>No questions found. <a [routerLink]="['/subject', slug]">Back to topics</a></p>
+} @else {
+  <nav class="crumb">
+    <a routerLink="/">Subjects</a> /
+    <a [routerLink]="['/subject', slug]">{{ subjectTitle }}</a> /
+    {{ headline() }}
+    <span class="mode-pill" [class.practice]="isPractice" [class.test]="!isPractice">{{ modeLabel() }}</span>
+    @if (phase === 'taking') {
+      <span class="mode-switch-wrap">
+        @if (isPractice) {
+          <a
+            class="mode-switch"
+            [routerLink]="['/subject', slug, 'quiz', topicRaw]"
+            [queryParams]="{ mode: 'test' }"
+            >Switch to test</a
+          >
+        } @else {
+          <a
+            class="mode-switch"
+            [routerLink]="['/subject', slug, 'quiz', topicRaw]"
+            [queryParams]="{ mode: 'practice' }"
+            >Switch to practice</a
+          >
+        }
+      </span>
+    }
+  </nav>
+
+  @if (phase === 'taking') {
+    <div class="head">
+      <h1>{{ headline() }}</h1>
+      <div class="meta">
+        @if (isPractice) {
+          <span>{{ practiceCheckedCount }} / {{ questions.length }} checked</span>
+        } @else {
+          <span>{{ answeredCount }} / {{ questions.length }} answered</span>
+        }
+      </div>
+    </div>
+    <div class="meter" aria-hidden="true">
+      <div class="meter-fill" [style.width.%]="progress"></div>
+    </div>
+
+    @if (current; as q) {
+      <article class="qcard">
+        <div class="qtop">
+          <span class="badge">Question {{ index + 1 }} of {{ questions.length }}</span>
+          @if (q.topicLabel !== headline()) {
+            <span class="badge soft">{{ q.topicLabel }}</span>
+          }
+        </div>
+        <div class="qbody" [innerHTML]="q.questionHtml | safeHtml"></div>
+
+        <div class="opts" role="radiogroup" [attr.aria-label]="'Options for question ' + (index + 1)">
+          @for (o of q.options; track o.key) {
+            <label class="opt" [ngClass]="optClass(q, o.key)">
+              <input
+                type="radio"
+                [name]="'q-' + q.id"
+                [value]="o.key"
+                [checked]="answers[q.id] === o.key"
+                [disabled]="isPractice && practiceRevealed[q.id]"
+                (change)="pick(q.id, o.key)"
+              />
+              <span class="key">{{ o.key }}</span>
+              <span class="tx">{{ o.text }}</span>
+            </label>
+          }
+        </div>
+
+        @if (isPractice) {
+          @if (!practiceRevealed[q.id]) {
+            <div class="practice-actions">
+              <button
+                type="button"
+                class="btn primary"
+                (click)="practiceSubmitCurrent()"
+                [disabled]="practiceRevealBlocked()"
+              >
+                Submit answer &amp; show explanation
+              </button>
+              @if (practiceRevealBlocked()) {
+                <span class="hint muted small">Pick an option, then submit to see the correct answer.</span>
+              }
+            </div>
+          } @else {
+            <div class="practice-feedback">
+              @if (answers[q.id] === q.answerKey) {
+                <p class="fb ok"><strong>Correct.</strong> +{{ q.marks }} marks.</p>
+              } @else {
+                <p class="fb bad">
+                  <strong>Incorrect.</strong> Correct option is <strong>{{ q.answerKey }}</strong>. Penalty
+                  −{{ q.negativeMarks }} marks.
+                </p>
+              }
+              @if (q.explanationHtml) {
+                <div class="explain inline" [innerHTML]="q.explanationHtml | safeHtml"></div>
+              }
+            </div>
+          }
+        }
+      </article>
+    }
+
+    <div class="navrow">
+      <button type="button" class="btn ghost" (click)="prev()" [disabled]="index === 0">Previous</button>
+      <div class="dots" role="tablist" aria-label="Question index">
+        @for (q of questions; track q.id; let i = $index) {
+          <button
+            type="button"
+            class="dot"
+            [class.on]="i === index"
+            [class.has]="dotFilled(q)"
+            (click)="jump(i)"
+            [attr.aria-label]="'Go to question ' + (i + 1)"
+          ></button>
+        }
+      </div>
+      @if (index < questions.length - 1) {
+        <button type="button" class="btn" (click)="next()">Next</button>
+      } @else {
+        @if (isPractice && current && !practiceRevealed[current.id]) {
+          <span class="nav-hint muted small">Submit this question to finish the session.</span>
+        }
+        @if (!isPractice) {
+          <button type="button" class="btn primary" (click)="finish()">Submit test</button>
+        }
+        @if (isPractice && current && practiceRevealed[current.id]) {
+          <button type="button" class="btn primary" (click)="finish()">View results</button>
+        }
+      }
+    </div>
+    @if (isPractice && index === questions.length - 1 && current && !practiceRevealed[current.id]) {
+      <p class="end-hint muted small">
+        In practice mode, use <strong>Submit answer &amp; show explanation</strong> on the last question, then
+        <strong>View results</strong> appears here.
+      </p>
+    }
+  } @else {
+    <div class="summary">
+      <h1>Results — {{ headline() }} <span class="mode-pill quiet">{{ modeLabel() }}</span></h1>
+      <div class="stats">
+        <div class="stat">
+          <span class="n">{{ correctCount }}</span>
+          <span class="l">Correct</span>
+        </div>
+        <div class="stat">
+          <span class="n">{{ incorrectCount }}</span>
+          <span class="l">Wrong</span>
+        </div>
+        <div class="stat">
+          <span class="n">{{ unattemptedCount }}</span>
+          <span class="l">Skipped</span>
+        </div>
+        <div class="stat accent">
+          <span class="n">{{ scoreNet() | number: '1.2-2' }}</span>
+          <span class="l">Net marks</span>
+        </div>
+      </div>
+      <p class="muted small">
+        +{{ gained | number: '1.2-2' }} for correct − {{ lost | number: '1.2-2' }} negative marking
+      </p>
+      <div class="review-actions">
+        <a [routerLink]="['/subject', slug]" class="btn ghost">Topics</a>
+        <button type="button" class="btn primary" (click)="retry()">Retry</button>
+      </div>
+    </div>
+
+    <section class="breakdown">
+      <h2>Review</h2>
+      @for (q of questions; track q.id; let ri = $index) {
+        <div
+          class="rblock"
+          [class.ok]="answers[q.id] === q.answerKey"
+          [class.bad]="answers[q.id] && answers[q.id] !== q.answerKey"
+          [class.skip]="!answers[q.id]"
+        >
+          <div class="rhead">
+            <span class="rn">Q{{ ri + 1 }}</span>
+            @if (!answers[q.id]) {
+              <span class="tag">Skipped</span>
+            } @else if (answers[q.id] === q.answerKey) {
+              <span class="tag good">Correct</span>
+            } @else {
+              <span class="tag bad">Wrong</span>
+            }
+            @if (!isPractice) {
+              <button type="button" class="linkbtn" (click)="toggleExp(q.id)">
+                {{ expOpen[q.id] ? 'Hide' : 'Show' }} explanation
+              </button>
+            }
+          </div>
+          <div class="qbody compact" [innerHTML]="q.questionHtml | safeHtml"></div>
+          <ul class="recap">
+            @for (o of q.options; track o.key) {
+              <li class="compact" [class.sel]="answers[q.id] === o.key" [class.ans]="q.answerKey === o.key">
+                <strong>{{ o.key }}</strong>
+                {{ o.text }}
+              </li>
+            }
+          </ul>
+          @if (isPractice && practiceRevealed[q.id] && q.explanationHtml) {
+            <div class="explain" [innerHTML]="q.explanationHtml | safeHtml"></div>
+          }
+          @if (!isPractice && expOpen[q.id] && q.explanationHtml) {
+            <div class="explain" [innerHTML]="q.explanationHtml | safeHtml"></div>
+          }
+        </div>
+      }
+    </section>
+  }
+}
