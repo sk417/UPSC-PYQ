@@ -1,4 +1,5 @@
 import { HttpClient } from '@angular/common/http';
+import { DOCUMENT } from '@angular/common';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map, of, shareReplay, switchMap } from 'rxjs';
 
@@ -16,7 +17,10 @@ import type {
 })
 export class QuizDataService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = '/assets/subjects';
+  private readonly document = inject(DOCUMENT);
+  private readonly baseUrl = new URL('assets/subjects', this.document.baseURI)
+    .toString()
+    .replace(/\/$/, '');
 
   private manifest$?: Observable<SubjectsManifest>;
 
